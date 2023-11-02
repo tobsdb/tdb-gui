@@ -43,6 +43,8 @@ export default function Connection() {
 
   const [schemaPreviewOpen, setSchemaPreviewOpen] = useState(false);
 
+  const [errorMsg, setErrorMsg] = useState<string | undefined>(undefined);
+
   const connect = async () => {
     const { data, db } = await UseConn(connId);
     if (!data) {
@@ -51,19 +53,16 @@ export default function Connection() {
       });
       return;
     }
+
+    if (!db) {
+      setErrorMsg(`Websocket connection to ${data.url} failed`);
+    }
     setConn({ data, db });
   };
 
   useEffect(() => {
     connect();
   }, [connId]);
-
-  const [errorMsg, setErrorMsg] = useState<string | undefined>(undefined);
-  useEffect(() => {
-    if (conn.data && !conn.db) {
-      setErrorMsg(`Websocket connection to ${conn.data.url} failed`);
-    }
-  }, [conn]);
 
   const [queryRes, setQueryRes] = useState<
     Awaited<ReturnType<typeof Tobsdb.prototype.query>> | undefined
@@ -300,12 +299,23 @@ function UseQuery(props: {
       return;
     }
 
-    const res = await props.conn.db.query(
-      action as QueryAction,
-      table,
-      parsedData,
-      parsedWhere
-    );
+    let res;
+    try {
+      res = await props.conn.db.query(
+        action as QueryAction,
+        table,
+        parsedData,
+        parsedWhere
+      );
+    } catch (e) {
+      if (e instanceof Error) {
+        throwError(e.message);
+        return;
+      }
+
+      throwError("Failed to run Query");
+      return;
+    }
 
     // @ts-ignore
     delete res.__tdb_client_req_id__;
