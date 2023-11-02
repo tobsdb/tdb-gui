@@ -218,20 +218,73 @@ e.g:
 function DisplayQueryData(
   props: Awaited<ReturnType<typeof Tobsdb.prototype.query>>
 ) {
-  // TODO: scroll render and paginate data
-  if (props.data && Array.isArray(props.data)) {
-    return (
-      <div style={{ maxHeight: "100%", width: "100%", overflowY: "auto" }}>
-        <p style={{ whiteSpace: "pre-wrap" }}>
-          {JSON.stringify(props, null, 4)}
-        </p>
-      </div>
-    );
-  }
+  const [page, setPage] = useState(1);
+  useEffect(() => {
+    setPage(1);
+  }, [props]);
 
   return (
-    <div style={{ maxHeight: "100%", width: "100%", overflowY: "auto" }}>
-      <p style={{ whiteSpace: "pre-wrap" }}>{JSON.stringify(props, null, 4)}</p>
+    <div
+      style={{
+        width: "100%",
+        maxHeight: "100%",
+        overflowY: "auto",
+        display: "flex",
+        flexDirection: "column",
+      }}
+    >
+      <div
+        style={{
+          color: props.status >= 400 ? "red" : "green",
+          display: "flex",
+          flexDirection: "row",
+          alignItems: "center",
+          gap: "1rem",
+        }}
+      >
+        <span>Status: {props.status}</span>
+        <span>Message: {props.message}</span>
+      </div>
+      {Array.isArray(props.data) ? (
+        <>
+          <div>
+            <Button
+              disabled={page === 1}
+              onClick={() => setPage(page - 1)}
+            >{`<-`}</Button>
+            <span>Page {page}</span>
+            <Button
+              disabled={50 * page >= props.data.length}
+              onClick={() => setPage(page + 1)}
+            >{`->`}</Button>
+          </div>
+          <p
+            style={{
+              whiteSpace: "pre-wrap",
+              width: "100%",
+              maxHeight: "100%",
+              overflowY: "auto",
+            }}
+          >
+            {JSON.stringify(
+              props.data.slice(50 * (page - 1), 50 * page),
+              null,
+              4
+            )}
+          </p>
+        </>
+      ) : (
+        <p
+          style={{
+            whiteSpace: "pre-wrap",
+            width: "100%",
+            maxHeight: "100%",
+            overflowY: "auto",
+          }}
+        >
+          {JSON.stringify(props.data ?? null, null, 4)}
+        </p>
+      )}
     </div>
   );
 }
