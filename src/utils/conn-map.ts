@@ -23,6 +23,11 @@ export const GLOBAL_CONNS = {
     const data = conns.find((c) => c.connId === connId)?.data;
     return data;
   },
+  delete: (connId: string) => {
+    const conns = GLOBAL_CONNS.getAll();
+    const newConns = conns.filter((c) => c.connId !== connId);
+    localStorage.setItem(SAVED_CONNS_KEY, JSON.stringify(newConns));
+  },
 };
 
 export async function SaveConn(connId: string, data: Data) {
@@ -64,4 +69,9 @@ export async function UseConn(connId: string) {
   }
 
   return { data, db };
+}
+
+export function DeleteConn(connId: string) {
+  GLOBAL_CONNS.delete(connId);
+  TDB_CONNS.delete(connId);
 }
