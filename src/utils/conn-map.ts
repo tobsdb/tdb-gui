@@ -4,7 +4,7 @@ import { Tobsdb } from "./tdb-wrapper";
 export const TDB_CONNS = new Map<string, Tobsdb>();
 
 const SAVED_CONNS_KEY = "saved_tdb_connId_data_map_array";
-type SavedConn = { connId: string; data: Record<FieldName, string> };
+export type SavedConn = { connId: string; data: Record<FieldName, string> };
 export type Data = Record<FieldName, string>;
 
 export const GLOBAL_CONNS = {
@@ -35,6 +35,7 @@ export async function SaveConn(connId: string, data: Data) {
     data[FieldName.PASSWORD]
   );
   TDB_CONNS.set(connId, db);
+  window.postMessage("refreshSiderBar");
 }
 
 export async function UseConn(connId: string) {
