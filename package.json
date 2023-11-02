@@ -11,7 +11,8 @@
     "postinstall": "electron-builder install-app-deps",
     "build:win": "pnpm run build && electron-builder --win --config",
     "build:mac": "pnpm run build && electron-builder --mac --config",
-    "build:linux": "pnpm run build && electron-builder --linux --config"
+    "build:linux": "pnpm run build && electron-builder --linux --config",
+    "tdb": "tdb -u user -p pass -log -dbg -db ./db.tdb"
   },
   "dependencies": {
     "@emotion/react": "^11.11.1",
