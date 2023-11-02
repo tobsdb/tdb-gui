@@ -1,7 +1,9 @@
 :root {
-  font-family: Inter, system-ui, Avenir, Helvetica, Arial, sans-serif;
+  font-family: "Tilt Neon", system-ui, Roboto, Avenir, Helvetica, Arial,
+    sans-serif;
   line-height: 1.5;
   font-weight: 400;
+  font-size: 16px;
 
   color-scheme: light dark;
   color: rgba(255, 255, 255, 0.87);
@@ -14,10 +16,64 @@
   -webkit-text-size-adjust: 100%;
 }
 
+@media (max-width: 600px) {
+  :root {
+    font-size: 14px;
+  }
+}
+
 *,
 *::after,
 *::before {
   box-sizing: border-box;
   margin: 0;
   padding: 0;
+}
+
+html,
+body,
+.page {
+  width: 100vw;
+  width: 100dvw;
+  height: 100vh;
+  height: 100dvh;
+}
+
+.page {
+  display: flex;
+
+  & header {
+    height: 100%;
+    background-color: #0003;
+    padding-right: 0.25rem;
+  }
+
+  & main {
+    padding-left: 0.4rem;
+    padding-top: 0.4rem;
+    height: 100%;
+    width: 100%;
+    overflow-y: hidden;
+
+    & form {
+      width: 100%;
+      display: flex;
+      flex-direction: column;
+      gap: 0.8rem;
+      align-items: flex-start;
+      justify-content: normal;
+
+      & > fieldset {
+        border: none;
+        display: flex;
+        gap: 0.4rem;
+      }
+    }
+  }
+}
+
+@media (max-width: 600px) {
+  .display-large {
+    display: none;
+  }
 }

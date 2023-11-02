@@ -1,4 +1,4 @@
-import ipcEvents from "@/utils/ipc";
+import ipcEvents from "@/types/ipc";
 import { ipcMain } from "electron";
 
 /** Main Process Event listeners as an object */

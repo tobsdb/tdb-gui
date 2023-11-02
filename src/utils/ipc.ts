@@ -1,11 +1,21 @@
-import { type IpcMainInvokeEvent } from "electron";
+import ipcEvents from "@/types/ipc";
 
-type ElectronEvent<Args extends any[], Res = unknown> = (
-  event: IpcMainInvokeEvent,
-  ...args: Args
-) => Promise<Res>;
+/** type-safe api for invoking ipc events */
+export const useIPC = {
+  invoke: <const T extends keyof ipcEvents>(
+    event: T,
+    ...params: ipcEventsParameters<ipcEvents[T]>
+  ): ReturnType<ipcEvents[T]> => {
+    return window.ipcRenderer.invoke(event, ...params) as ReturnType<
+      ipcEvents[T]
+    >;
+  },
+};
 
-// declare events in the form `[event-name]: ElectronEvent<[...args], return_type>`
-type ipcEvents = {};
-
-export default ipcEvents;
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+type ipcEventsParameters<T extends (...args: any) => any> = T extends (
+  e: any,
+  ...args: infer P
+) => any
+  ? P
+  : never;
