@@ -1,8 +1,9 @@
-import { IconButton, List, ListItem } from "@mui/material";
+import { IconButton, List, ListItem, MenuItem } from "@mui/material";
 import { Link, Outlet } from "react-router-dom";
 import AddCircleIcon from "@mui/icons-material/AddCircle";
-import { GLOBAL_CONNS, type SavedConn } from "@/utils/conn-map";
+import { DeleteConn, GLOBAL_CONNS, type SavedConn } from "@/utils/conn-map";
 import { useEffect, useState } from "react";
+import { ContextMenu, useContextMenu } from "./context-menu";
 
 export default function SideBar() {
   const [conns, setConns] = useState(GLOBAL_CONNS.getAll());
@@ -21,6 +22,11 @@ export default function SideBar() {
     };
   }, []);
 
+  const deleteConn = (connId: string) => {
+    DeleteConn(connId);
+    setConns(GLOBAL_CONNS.getAll());
+  };
+
   return (
     <div className="page">
       <header>
@@ -35,7 +41,11 @@ export default function SideBar() {
         <nav>
           <List dense>
             {conns.map((conn) => (
-              <SideBarItem key={conn.connId} conn={conn} />
+              <SideBarItem
+                key={conn.connId}
+                conn={conn}
+                deleteConn={() => deleteConn(conn.connId)}
+              />
             ))}
           </List>
         </nav>
@@ -45,12 +55,16 @@ export default function SideBar() {
   );
 }
 
-function SideBarItem(props: { conn: SavedConn }) {
+function SideBarItem(props: { conn: SavedConn; deleteConn: () => void }) {
+  const { contextMenuPosition, handleContextMenu, closeContextMenu } =
+    useContextMenu();
+
   return (
     <ListItem
       key={props.conn.connId}
+      onContextMenu={handleContextMenu}
       sx={{
-        "&:hover": { backgroundColor: "info.main" },
+        "&:hover, &:has(*:focus)": { backgroundColor: "info.main" },
         cursor: "pointer",
       }}
     >
@@ -61,6 +75,13 @@ function SideBarItem(props: { conn: SavedConn }) {
         <h2>{props.conn.data.dbName}</h2>
         <sup>{props.conn.data.url}</sup>
       </Link>
+      <ContextMenu
+        contextMenuPosition={contextMenuPosition}
+        closeContextMenu={closeContextMenu}
+      >
+        <MenuItem>Edit</MenuItem>
+        <MenuItem onClick={props.deleteConn}>Delete</MenuItem>
+      </ContextMenu>
     </ListItem>
   );
 }
