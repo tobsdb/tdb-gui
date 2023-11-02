@@ -1,6 +1,7 @@
 import { UseConn, type Data } from "@/utils/conn-map";
 import {
   Button,
+  CircularProgress,
   Dialog,
   DialogTitle,
   FormControl,
@@ -12,7 +13,7 @@ import {
 } from "@mui/material";
 import InfoIcon from "@mui/icons-material/Info";
 import { useLoaderData, useNavigate } from "react-router-dom";
-import { FormEventHandler, useEffect, useState } from "react";
+import { FormEvent, FormEventHandler, useEffect, useState } from "react";
 import { type QueryAction, Tobsdb } from "@/utils/tdb-wrapper";
 import { ErrorAlert } from "@/components/error-alert";
 
@@ -67,64 +68,14 @@ export default function Connection() {
   const [queryRes, setQueryRes] = useState<
     Awaited<ReturnType<typeof Tobsdb.prototype.query>> | undefined
   >(undefined);
-  const runQuery: FormEventHandler<HTMLFormElement> = async (e) => {
-    e.preventDefault();
 
-    const formData = new FormData(e.currentTarget);
-    const data = formData.get("data") as string;
-    const where = formData.get("where") as string;
+  const handler = UseQuery({
+    conn,
+    setErrorMsg: (msg: string) => setErrorMsg(msg),
+  });
 
-    if (!conn.db) {
-      setErrorMsg(`Websocket not connected to ${conn.data?.url}`);
-      return;
-    }
-
-    let parsedData: object | object[] = {};
-    try {
-      if (!data) {
-        if (
-          selectedAction.includes("create") ||
-          selectedAction.includes("update")
-        ) {
-          setErrorMsg("Data argument is required");
-          return;
-        }
-      } else {
-        parsedData = JSON.parse(data);
-      }
-    } catch {
-      setErrorMsg("Invalid Data argument");
-      return;
-    }
-
-    let parsedWhere: object = {};
-    try {
-      if (!where) {
-        if (
-          selectedAction.includes("findUnique") ||
-          selectedAction.includes("delete")
-        ) {
-          setErrorMsg("Where argument is required");
-          return;
-        }
-      } else {
-        parsedWhere = JSON.parse(where);
-      }
-    } catch {
-      setErrorMsg("Invalid Where argument");
-      return;
-    }
-
-    const res = await conn.db.query(
-      selectedAction as QueryAction,
-      selectedTable,
-      parsedData,
-      parsedWhere
-    );
-
-    // @ts-ignore
-    delete res.__tdb_client_req_id__;
-    setQueryRes(res);
+  const handleSubmit: FormEventHandler<HTMLFormElement> = async (e) => {
+    handler.runQuery(e, (res) => setQueryRes(res));
   };
 
   return (
@@ -148,7 +99,10 @@ export default function Connection() {
         <p>
           {conn.data?.url}
           {conn.data?.username ? `@${conn.data.username}` : ""}
-          <IconButton onClick={() => setSchemaPreviewOpen(true)}>
+          <IconButton
+            title="View Schema"
+            onClick={() => setSchemaPreviewOpen(true)}
+          >
             <InfoIcon />
           </IconButton>
         </p>
@@ -173,7 +127,7 @@ export default function Connection() {
           </Dialog>
         ) : null}
       </div>
-      <form onSubmit={runQuery}>
+      <form onSubmit={handleSubmit}>
         {tableNames && tableNames.length ? (
           <FormControl sx={{ minWidth: 120 }}>
             <InputLabel>Table</InputLabel>
@@ -244,12 +198,20 @@ e.g:
         ) : null}
         <Button
           type="submit"
-          disabled={!conn.db || !selectedAction || !selectedTable}
+          disabled={
+            !conn.db || !selectedAction || !selectedTable || handler.isLoading
+          }
         >
           RUN
         </Button>
       </form>
-      {queryRes ? <DisplayQueryData {...queryRes} /> : null}
+      {handler.isLoading ? (
+        <div style={{ display: "grid", placeItems: "center" }}>
+          <CircularProgress />
+        </div>
+      ) : queryRes ? (
+        <DisplayQueryData {...queryRes} />
+      ) : null}
     </main>
   );
 }
@@ -257,14 +219,104 @@ e.g:
 function DisplayQueryData(
   props: Awaited<ReturnType<typeof Tobsdb.prototype.query>>
 ) {
+  // TODO: scroll render and paginate data
   if (props.data && Array.isArray(props.data)) {
+    return (
+      <div style={{ maxHeight: "100%", width: "100%", overflowY: "auto" }}>
+        <p style={{ whiteSpace: "pre-wrap" }}>
+          {JSON.stringify(props, null, 4)}
+        </p>
+      </div>
+    );
   }
 
   return (
-    <div>
+    <div style={{ maxHeight: "100%", width: "100%", overflowY: "auto" }}>
       <p style={{ whiteSpace: "pre-wrap" }}>{JSON.stringify(props, null, 4)}</p>
     </div>
   );
+}
+
+function UseQuery(props: {
+  conn: {
+    data: Data | undefined;
+    db: Tobsdb | undefined;
+  };
+  setErrorMsg: (msg: string) => void;
+}) {
+  const [isLoading, setIsLoading] = useState(false);
+  const throwError = (err: string) => {
+    setIsLoading(false);
+    props.setErrorMsg(err);
+  };
+
+  // TODO: save query params in some sort of history
+  // and left user be able to load those options back into the inputs
+  const runQuery = async (
+    e: FormEvent<HTMLFormElement>,
+    callback: (res: Awaited<ReturnType<typeof Tobsdb.prototype.query>>) => void
+  ) => {
+    e.preventDefault();
+    setIsLoading(true);
+
+    const formData = new FormData(e.currentTarget);
+    const action = formData.get("action")!.toString();
+    const table = formData.get("table")!.toString();
+    const data = formData.get("data") as string;
+    const where = formData.get("where") as string;
+
+    if (!props.conn.db) {
+      throwError(`Websocket not connected to ${props.conn.data?.url}`);
+      return;
+    }
+
+    let parsedData: object | object[] = {};
+    try {
+      if (!data) {
+        if (action.includes("create") || action.includes("update")) {
+          throwError("Data argument is required");
+          return;
+        }
+      } else {
+        parsedData = JSON.parse(data);
+      }
+    } catch {
+      throwError("Invalid Data argument");
+      return;
+    }
+
+    let parsedWhere: object = {};
+    try {
+      if (!where) {
+        if (action.includes("findUnique") || action.includes("delete")) {
+          throwError("Where argument is required");
+          return;
+        }
+      } else {
+        parsedWhere = JSON.parse(where);
+      }
+    } catch {
+      throwError("Invalid Where argument");
+      return;
+    }
+
+    const res = await props.conn.db.query(
+      action as QueryAction,
+      table,
+      parsedData,
+      parsedWhere
+    );
+
+    // @ts-ignore
+    delete res.__tdb_client_req_id__;
+    callback(res);
+    setIsLoading(false);
+  };
+
+  return {
+    isLoading,
+    runQuery,
+  };
 }
 
 function ParseTableNames(schema: string) {
