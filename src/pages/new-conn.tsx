@@ -1,5 +1,6 @@
 import {
   Button,
+  CircularProgress,
   Dialog,
   DialogActions,
   DialogContent,
@@ -38,6 +39,7 @@ export default function NewConnection() {
   const navigator = useNavigate();
   const [params] = useSearchParams();
 
+  const [errorReason, setErrorReason] = useState("");
   const [reasonAlertOpen, setReasonAlert] = useState(false);
   useEffect(() => {
     if (params.get("error") === "true") {
@@ -72,8 +74,10 @@ export default function NewConnection() {
     };
   };
 
+  const [isLoading, setIsLoading] = useState(false);
   const handleSubmit: FormEventHandler<HTMLFormElement> = async (e) => {
     e.preventDefault();
+    setIsLoading(true);
     const formData = new FormData(e.currentTarget);
 
     const data: Record<FieldName, string> = {} as Record<FieldName, string>;
@@ -84,9 +88,21 @@ export default function NewConnection() {
     }
 
     const connId = crypto.randomUUID();
-    await SaveConn(connId, data);
+    try {
+      await SaveConn(connId, data);
+      setIsLoading(false);
 
-    navigator(`/conn/${connId}`);
+      navigator(`/conn/${connId}`);
+    } catch (e) {
+      if (e instanceof Error) {
+        setErrorReason(e.message);
+        setReasonAlert(true);
+      } else {
+        setErrorReason("Failed to connect to tobsdb server");
+        setReasonAlert(true);
+      }
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -144,8 +160,8 @@ export default function NewConnection() {
             hidden
             accept=".tdb"
           />
-          <Button variant="contained" type="submit">
-            CONNECT
+          <Button disabled={isLoading} variant="contained" type="submit">
+            {isLoading ? <CircularProgress /> : "Connect"}
           </Button>
         </form>
       </main>
@@ -153,6 +169,7 @@ export default function NewConnection() {
         <ErrorAlert
           open={reasonAlertOpen}
           close={() => setReasonAlert(false)}
+          reason={errorReason}
         />
       ) : null}
     </>
