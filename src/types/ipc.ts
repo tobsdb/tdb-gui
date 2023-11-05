@@ -5,7 +5,11 @@ export type ElectronEvent<Args extends Record<string, any>, Res = unknown> = (
   args: Args
 ) => Promise<Res>;
 
-// declare events in the form `[event-name]: ElectronEvent<[...args], [return_type]>`
-type ipcEvents = {};
+// declare events in the form `[event-name]: ElectronEvent<{...args}, return_type>`
+export type ipcEvent = {
+  ircMain: ElectronEvent<{ event: string; args: any[] }>;
+};
 
-export default ipcEvents;
+export type ircEvent = {
+  refreshSideBar: [];
+};
