@@ -4,21 +4,19 @@ import AddCircleIcon from "@mui/icons-material/AddCircle";
 import { DeleteConn, GLOBAL_CONNS, type SavedConn } from "@/utils/conn-map";
 import { useEffect, useState } from "react";
 import { ContextMenu, useContextMenu } from "./context-menu";
+import { useIRC } from "@/utils/ipc";
 
+// TODO: edit connections
 export default function SideBar() {
   const [conns, setConns] = useState(GLOBAL_CONNS.getAll());
 
-  const refreshConns = (ev: MessageEvent<any>) => {
-    if (ev.data === "refreshSideBar") {
-      setConns(GLOBAL_CONNS.getAll());
-    }
-  };
-
   useEffect(() => {
-    window.addEventListener("message", refreshConns);
+    const offRefreshSidebar = useIRC.on("refreshSideBar", () => {
+      setConns(GLOBAL_CONNS.getAll());
+    });
 
     return () => {
-      window.removeEventListener("message", refreshConns);
+      offRefreshSidebar();
     };
   }, []);
 

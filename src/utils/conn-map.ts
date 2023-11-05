@@ -1,5 +1,6 @@
 import { FieldName } from "@/pages/new-conn";
 import { Tobsdb } from "./tdb-wrapper";
+import { useIRC } from "./ipc";
 
 export const TDB_CONNS = new Map<string, Tobsdb>();
 
@@ -31,7 +32,6 @@ export const GLOBAL_CONNS = {
 };
 
 export async function SaveConn(connId: string, data: Data) {
-  GLOBAL_CONNS.set(connId, data);
   const db = await Tobsdb.connect(
     data[FieldName.URL],
     data[FieldName.DB],
@@ -39,8 +39,9 @@ export async function SaveConn(connId: string, data: Data) {
     data[FieldName.USERNAME],
     data[FieldName.PASSWORD]
   );
+  GLOBAL_CONNS.set(connId, data);
   TDB_CONNS.set(connId, db);
-  window.postMessage("refreshSiderBar");
+  await useIRC.emit("refreshSideBar");
 }
 
 export async function UseConn(connId: string) {
