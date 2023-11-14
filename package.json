@@ -6,7 +6,7 @@
     "url": "https://github.com/tobsdb/tdb-gui"
   },
   "scripts": {
-    "dev": "pnpm tdb & vite",
+    "dev": "vite",
     "build:web": "tsc && vite build",
     "build": "tsc && vite build && electron-builder",
     "lint": "eslint src --ext ts,tsx --report-unused-disable-directives --max-warnings 0",

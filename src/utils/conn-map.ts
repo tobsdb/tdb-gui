@@ -53,10 +53,8 @@ export async function UseConn(connId: string) {
 
   let db = TDB_CONNS.get(connId);
 
-  // reconnection logic
   try {
     if (!db) {
-      console.log("reconnecting to", data[FieldName.URL]);
       db = new Tobsdb(
         data[FieldName.URL],
         data[FieldName.DB],
@@ -64,7 +62,6 @@ export async function UseConn(connId: string) {
         data[FieldName.USERNAME],
         data[FieldName.PASSWORD]
       );
-      await db.connect();
       TDB_CONNS.set(connId, db);
     }
   } catch (e) {

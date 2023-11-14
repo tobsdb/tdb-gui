@@ -16,13 +16,21 @@ export class Tobsdb {
     this.url = canonicalUrl.toString();
   }
 
-  async connect() {
+  connect() {
     this.ws = new WebSocket(this.url);
     return new Promise<void>((resolve, reject) => {
-      if (!this.ws || this.ws.readyState < WebSocket.CLOSING) return;
+      if (!this.ws || this.ws.readyState == WebSocket.OPEN) return;
 
-      this.ws.onopen = () => resolve();
       this.ws.onerror = (error) => reject(error);
+      this.ws.onclose = (e) => {
+        // unsupported data
+        if (e.code === 1003) {
+          return reject(e.reason);
+        }
+      };
+      this.ws.onopen = () => {
+        setTimeout(() => resolve(), 500);
+      };
     });
   }
 
@@ -33,22 +41,22 @@ export class Tobsdb {
     where?: object | undefined
   ): Promise<{ status: number; message: string; data: object | object[] }> {
     await this.connect();
-    if (!this.ws || this.ws.readyState >= 2) {
+    if (!this.ws || this.ws.readyState >= WebSocket.CLOSING) {
       throw new Error("Websocket connection has closed");
     }
 
     const q = JSON.stringify({ action, table, data, where });
     this.ws.send(q);
     return new Promise<any>((res, reject) => {
-      if (!this.ws || this.ws.readyState >= 2) {
+      if (!this.ws || this.ws.readyState >= WebSocket.CLOSING) {
         return reject("Websocket connection has closed");
       }
       this.ws.onmessage = (ev) => {
         const data = JSON.parse(ev.data);
         res(data);
       };
-      this.ws.onclose = () => {
-        reject("Websocket connection has closed");
+      this.ws.onclose = (e) => {
+        reject(e.reason);
       };
     });
   }

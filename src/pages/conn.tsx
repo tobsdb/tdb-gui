@@ -31,10 +31,10 @@ const QUERY_ACTIONS: QueryAction[] = [
 export default function Connection() {
   const connId = useLoaderData() as string;
   const navigate = useNavigate();
-  const [conn, setConn] = useState<{
-    data: Data | undefined;
-    db: Tobsdb | undefined;
-  }>({ data: undefined, db: undefined });
+  const [conn, setConn] = useState<{ data?: Data; db?: Tobsdb }>({
+    data: undefined,
+    db: undefined,
+  });
   const tableNames = conn.data?.schema
     ? ParseTableNames(conn.data.schema)
     : null;
@@ -93,57 +93,59 @@ export default function Connection() {
           reason={errorMsg}
         />
       ) : null}
-      <div style={{ marginBottom: "1rem" }}>
-        <h1>{conn.data?.dbName}</h1>
-        <p>
-          {conn.data?.url}
-          {conn.data?.username ? `@${conn.data.username}` : ""}
-          <IconButton
-            title="View Schema"
-            onClick={() => setSchemaPreviewOpen(true)}
-          >
-            <InfoIcon />
-          </IconButton>
-        </p>
-        {schemaPreviewOpen ? (
-          <Dialog
-            open={schemaPreviewOpen}
-            onClose={() => setSchemaPreviewOpen(false)}
-            fullWidth
-          >
-            <DialogTitle>Schema</DialogTitle>
-            <p
-              style={{
-                padding: "0 .8rem",
-                whiteSpace: "pre-line",
-                overflowY: "auto",
-                maxHeight: "100%",
-                width: "100%",
-              }}
+      {conn.data ? (
+        <div style={{ marginBottom: "1rem" }}>
+          <h1>{conn.data.dbName}</h1>
+          <p>
+            {conn.data.url}
+            {conn.data.username ? `@${conn.data.username}` : ""}
+            <IconButton
+              title="View Schema"
+              onClick={() => setSchemaPreviewOpen(true)}
             >
-              {conn.data?.schema}
-            </p>
-          </Dialog>
-        ) : null}
-      </div>
+              <InfoIcon />
+            </IconButton>
+          </p>
+          {schemaPreviewOpen ? (
+            <Dialog
+              open={schemaPreviewOpen}
+              onClose={() => setSchemaPreviewOpen(false)}
+              fullWidth
+            >
+              <DialogTitle>Schema</DialogTitle>
+              <p
+                style={{
+                  padding: "0 .8rem",
+                  whiteSpace: "pre-line",
+                  overflowY: "auto",
+                  maxHeight: "100%",
+                  width: "100%",
+                }}
+              >
+                {conn.data?.schema}
+              </p>
+            </Dialog>
+          ) : null}
+        </div>
+      ) : null}
       <form onSubmit={handleSubmit}>
-        {tableNames && tableNames.length ? (
-          <FormControl sx={{ minWidth: 120 }}>
-            <InputLabel>Table</InputLabel>
-            <Select
-              label="Table"
-              name="table"
-              value={selectedTable}
-              onChange={(e) => setSelectedTable(e.target.value)}
-            >
-              {tableNames.map((tableName, idx) => (
-                <MenuItem key={idx} value={tableName}>
-                  {tableName}
-                </MenuItem>
-              ))}
-            </Select>
-          </FormControl>
-        ) : null}
+        <FormControl sx={{ minWidth: 120 }}>
+          <InputLabel>Table</InputLabel>
+          <Select
+            label="Table"
+            name="table"
+            value={selectedTable}
+            onChange={(e) => setSelectedTable(e.target.value)}
+          >
+            {tableNames && tableNames.length
+              ? tableNames.map((tableName, idx) => (
+                  <MenuItem key={idx} value={tableName}>
+                    {tableName}
+                  </MenuItem>
+                ))
+              : null}
+          </Select>
+        </FormControl>
         <FormControl sx={{ minWidth: 120 }}>
           <InputLabel>Action</InputLabel>
           <Select
@@ -163,6 +165,7 @@ export default function Connection() {
           <TextField
             label="Where"
             name="where"
+            spellCheck={false}
             placeholder={`\
 e.g:
 {
@@ -183,6 +186,7 @@ e.g:
           <TextField
             label="Data"
             name="data"
+            spellCheck={false}
             placeholder={`\
 e.g:
 {
@@ -290,10 +294,7 @@ function DisplayQueryData(
 }
 
 function UseQuery(props: {
-  conn: {
-    data: Data | undefined;
-    db: Tobsdb | undefined;
-  };
+  conn: { data?: Data; db?: Tobsdb };
   setErrorMsg: (msg: string) => void;
 }) {
   const [isLoading, setIsLoading] = useState(false);
@@ -314,8 +315,8 @@ function UseQuery(props: {
     const formData = new FormData(e.currentTarget);
     const action = formData.get("action")!.toString();
     const table = formData.get("table")!.toString();
-    const data = formData.get("data") as string;
-    const where = formData.get("where") as string;
+    const data = formData.get("data")?.toString();
+    const where = formData.get("where")?.toString();
 
     if (!props.conn.db) {
       throwError(`Websocket not connected to ${props.conn.data?.url}`);
@@ -361,6 +362,10 @@ function UseQuery(props: {
         parsedWhere
       );
     } catch (e) {
+      if (typeof e === "string") {
+        throwError(e);
+        return;
+      }
       if (e instanceof Error) {
         throwError(e.message);
         return;
