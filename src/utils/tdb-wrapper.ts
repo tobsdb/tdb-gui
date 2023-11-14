@@ -1,11 +1,8 @@
 export class Tobsdb {
-  ws: WebSocket;
+  private ws?: WebSocket;
+  public url: string;
 
-  constructor(url: string) {
-    this.ws = new WebSocket(url);
-  }
-
-  static async connect(
+  constructor(
     url: string,
     dbName: string,
     schema: string,
@@ -16,34 +13,42 @@ export class Tobsdb {
     canonicalUrl.searchParams.set("db", dbName);
     canonicalUrl.searchParams.set("schema", schema);
     canonicalUrl.searchParams.set("auth", `${username}:${password}`);
+    this.url = canonicalUrl.toString();
+  }
 
-    const db = new Tobsdb(canonicalUrl.toString());
+  async connect() {
+    this.ws = new WebSocket(this.url);
+    return new Promise<void>((resolve, reject) => {
+      if (!this.ws || this.ws.readyState < WebSocket.CLOSING) return;
 
-    return new Promise<Tobsdb>((resolve, reject) => {
-      db.ws.onopen = () => resolve(db);
-      db.ws.onerror = (error) => reject(error);
+      this.ws.onopen = () => resolve();
+      this.ws.onerror = (error) => reject(error);
     });
   }
 
-  query(
+  async query(
     action: QueryAction,
     table: string,
     data: object | object[] | undefined,
     where?: object | undefined
   ): Promise<{ status: number; message: string; data: object | object[] }> {
-    if (this.ws.readyState >= 2) {
+    await this.connect();
+    if (!this.ws || this.ws.readyState >= 2) {
       throw new Error("Websocket connection has closed");
     }
 
     const q = JSON.stringify({ action, table, data, where });
     this.ws.send(q);
-    return new Promise<any>((res, rej) => {
+    return new Promise<any>((res, reject) => {
+      if (!this.ws || this.ws.readyState >= 2) {
+        return reject("Websocket connection has closed");
+      }
       this.ws.onmessage = (ev) => {
         const data = JSON.parse(ev.data);
         res(data);
       };
       this.ws.onclose = () => {
-        rej("Websocket connection has closed");
+        reject("Websocket connection has closed");
       };
     });
   }
