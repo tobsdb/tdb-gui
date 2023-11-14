@@ -3,9 +3,9 @@
  */
 {
   "$schema": "https://raw.githubusercontent.com/electron-userland/electron-builder/master/packages/app-builder-lib/scheme.json",
-  "appId": "YourAppID",
+  "appId": "com.tobsdb.tdbgui",
   "asar": true,
-  "productName": "YourAppName",
+  "productName": "TDB-GUI",
   "directories": {
     "output": "release/${version}"
   },
@@ -17,7 +17,7 @@
     "target": [
       "dmg"
     ],
-    "artifactName": "${productName}-Mac-${version}-Installer.${ext}"
+    "artifactName": "${productName}-mac-${version}-Installer.${ext}"
   },
   "win": {
     "target": [
@@ -28,7 +28,7 @@
         ]
       }
     ],
-    "artifactName": "${productName}-Windows-${version}-Setup.${ext}"
+    "artifactName": "${productName}-win-${version}-Setup.${ext}"
   },
   "nsis": {
     "oneClick": false,
@@ -41,5 +41,6 @@
       "AppImage"
     ],
     "artifactName": "${productName}-Linux-${version}.${ext}"
-  }
+  },
+  "publish": "github"
 }
