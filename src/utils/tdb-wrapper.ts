@@ -17,6 +17,9 @@ export class Tobsdb {
   }
 
   connect() {
+    if (this.ws && this.ws.readyState <= WebSocket.OPEN) {
+      return;
+    }
     this.ws = new WebSocket(this.url);
     return new Promise<void>((resolve, reject) => {
       if (!this.ws || this.ws.readyState == WebSocket.OPEN) return;

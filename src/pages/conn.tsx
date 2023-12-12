@@ -1,9 +1,7 @@
-import { UseConn, type Data } from "@/utils/conn-map";
+import { UseConn, type Data, UpdateConn } from "@/utils/conn-map";
 import {
   Button,
   CircularProgress,
-  Dialog,
-  DialogTitle,
   FormControl,
   IconButton,
   InputLabel,
@@ -16,6 +14,8 @@ import { useLoaderData, useNavigate } from "react-router-dom";
 import { FormEvent, FormEventHandler, useEffect, useState } from "react";
 import { type QueryAction, Tobsdb } from "@/utils/tdb-wrapper";
 import { ErrorAlert } from "@/components/error-alert";
+import ConnInfo from "@/components/conn-info";
+import { FieldName } from "./new-conn";
 
 const QUERY_ACTIONS: QueryAction[] = [
   "create",
@@ -41,7 +41,7 @@ export default function Connection() {
   const [selectedTable, setSelectedTable] = useState<string>("");
   const [selectedAction, setSelectedAction] = useState<string>("");
 
-  const [schemaPreviewOpen, setSchemaPreviewOpen] = useState(false);
+  const [connInfoOpen, setConnInfoOpen] = useState(false);
 
   const [errorMsg, setErrorMsg] = useState<string | undefined>(undefined);
 
@@ -101,30 +101,25 @@ export default function Connection() {
             {conn.data.username ? `@${conn.data.username}` : ""}
             <IconButton
               title="View Schema"
-              onClick={() => setSchemaPreviewOpen(true)}
+              onClick={() => setConnInfoOpen(true)}
             >
               <InfoIcon />
             </IconButton>
           </p>
-          {schemaPreviewOpen ? (
-            <Dialog
-              open={schemaPreviewOpen}
-              onClose={() => setSchemaPreviewOpen(false)}
-              fullWidth
-            >
-              <DialogTitle>Schema</DialogTitle>
-              <p
-                style={{
-                  padding: "0 .8rem",
-                  whiteSpace: "pre-line",
-                  overflowY: "auto",
-                  maxHeight: "100%",
-                  width: "100%",
-                }}
-              >
-                {conn.data?.schema}
-              </p>
-            </Dialog>
+          {connInfoOpen ? (
+            <ConnInfo
+              open={connInfoOpen}
+              edit={async (schema: string) => {
+                const conn = await UpdateConn(connId, {
+                  [FieldName.SCHEMA]: schema,
+                });
+                if (conn) {
+                  setConn(conn);
+                }
+              }}
+              close={() => setConnInfoOpen(false)}
+              data={conn.data}
+            />
           ) : null}
         </div>
       ) : null}

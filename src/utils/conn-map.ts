@@ -16,7 +16,12 @@ export const GLOBAL_CONNS = {
   },
   set: (connId: string, data: Data) => {
     const conns = GLOBAL_CONNS.getAll();
-    conns.push({ connId, data });
+    const connIdx = conns.findIndex((c) => c.connId === connId);
+    if (connIdx === -1) {
+      conns.push({ connId, data });
+    } else {
+      conns.splice(connIdx, 1, { connId, data });
+    }
     localStorage.setItem(SAVED_CONNS_KEY, JSON.stringify(conns));
   },
   get: (connId: string): Data | undefined => {
@@ -25,9 +30,9 @@ export const GLOBAL_CONNS = {
     return data;
   },
   delete: (connId: string) => {
-    const conns = GLOBAL_CONNS.getAll();
-    const newConns = conns.filter((c) => c.connId !== connId);
-    localStorage.setItem(SAVED_CONNS_KEY, JSON.stringify(newConns));
+    let conns = GLOBAL_CONNS.getAll();
+    conns = conns.filter((c) => c.connId !== connId);
+    localStorage.setItem(SAVED_CONNS_KEY, JSON.stringify(conns));
   },
 };
 
@@ -39,10 +44,27 @@ export async function SaveConn(connId: string, data: Data) {
     data[FieldName.USERNAME],
     data[FieldName.PASSWORD]
   );
-  await db.connect();
   GLOBAL_CONNS.set(connId, data);
   TDB_CONNS.set(connId, db);
   await useIRC.emit("refreshSideBar");
+}
+
+export async function UpdateConn(connId: string, newData: Partial<Data>) {
+  let data = GLOBAL_CONNS.get(connId);
+  if (!data) {
+    return;
+  }
+  data = { ...data, ...newData };
+  const db = new Tobsdb(
+    data[FieldName.URL],
+    data[FieldName.DB],
+    data[FieldName.SCHEMA],
+    data[FieldName.USERNAME],
+    data[FieldName.PASSWORD]
+  );
+  GLOBAL_CONNS.set(connId, data);
+  TDB_CONNS.set(connId, db);
+  return { data, db };
 }
 
 export async function UseConn(connId: string) {
