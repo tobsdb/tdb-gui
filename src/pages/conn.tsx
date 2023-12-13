@@ -100,7 +100,7 @@ export default function Connection() {
             {conn.data.url}
             {conn.data.username ? `@${conn.data.username}` : ""}
             <IconButton
-              title="View Schema"
+              title="View Connection Info"
               onClick={() => setConnInfoOpen(true)}
             >
               <InfoIcon />
@@ -109,12 +109,13 @@ export default function Connection() {
           {connInfoOpen ? (
             <ConnInfo
               open={connInfoOpen}
-              edit={async (schema: string) => {
-                const conn = await UpdateConn(connId, {
-                  [FieldName.SCHEMA]: schema,
+              edit={async (data: Partial<{ [key in FieldName]: string }>) => {
+                const newConn = await UpdateConn(connId, {
+                  ...conn.data,
+                  ...data,
                 });
-                if (conn) {
-                  setConn(conn);
+                if (newConn) {
+                  setConn(newConn);
                 }
               }}
               close={() => setConnInfoOpen(false)}
